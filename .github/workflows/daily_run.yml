@@ -3,7 +3,7 @@ name: Daily Stock Report
 on:
   schedule:
     # UTC 기준입니다. 한국 시간 오전 8시는 UTC 23시입니다.
-    - cron: '10 6 * * *' 
+    - cron: '40 23 * * *' 
   workflow_dispatch: # 직접 버튼 눌러서 실행하고 싶을 때 사용
 
 jobs:
