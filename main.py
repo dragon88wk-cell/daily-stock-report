@@ -44,7 +44,15 @@ def get_market_reports_top10():
 async def send_telegram_msg(text):
     print("📲 텔레그램으로 브리핑 전송 중...")
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=text, parse_mode='Markdown')
+    # [수정된 부분] 텔레그램 서버가 느릴 때를 대비해 기다리는 시간을 30초로 넉넉히 늘립니다.
+    await bot.send_message(
+        chat_id=TELEGRAM_CHAT_ID, 
+        text=text, 
+        parse_mode='Markdown',
+        read_timeout=30,
+        write_timeout=30,
+        connect_timeout=30
+    )
 
 async def main():
     # 3. 리포트 데이터 수집
