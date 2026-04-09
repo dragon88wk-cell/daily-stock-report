@@ -44,22 +44,21 @@ def get_market_reports_top10():
 async def send_telegram_msg(text):
     print("📲 텔레그램으로 브리핑 전송 중...")
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    # [수정된 부분] 텔레그램 서버가 느릴 때를 대비해 기다리는 시간을 30초로 넉넉히 늘립니다.
+    
+    # [핵심 수정 1] 텔레그램의 깐깐한 마크다운 검사 기능(parse_mode)을 아예 제거하여 에러 원천 차단
     await bot.send_message(
         chat_id=TELEGRAM_CHAT_ID, 
         text=text, 
-        parse_mode='Markdown',
         read_timeout=30,
         write_timeout=30,
         connect_timeout=30
     )
 
 async def main():
-    # 3. 리포트 데이터 수집
     reports_list = get_market_reports_top10()
     context = "\n".join(reports_list)
 
-    # 4. 제미나이 심층 분석 지시문
+    # [핵심 수정 2] 제미나이에게 에러를 유발하는 기호를 쓰지 말라고 강력하게 지시
     prompt = f"""
     당신은 베테랑 경제 전문 기자의 데스크 보고 및 기사 기획을 돕는 수석 어시스턴트입니다. 
     다음은 오늘자 주요 증권사 시황 리포트 10개의 제목입니다:
@@ -67,19 +66,19 @@ async def main():
     {context}
 
     위 내용을 바탕으로 다음 두 가지 형식의 보고서를 작성하세요.
-
     1. [종합 시황 요약]: 오늘 시장의 핵심 키워드를 3~5개 추출하고, 전체적인 흐름을 약 1000자 내외로 상세히 축약하세요. 
     2. [주요 리포트 5선]: 10개의 리포트 중 가장 시장 영향력이 크거나 눈에 띄는 5개를 선정하여, 각 리포트의 '제목'과 그 리포트가 시사하는 바를 '3줄 요약'으로 정리하세요.
 
-    응답은 스마트폰에서 읽기 좋게 깔끔한 마크다운(Markdown) 형식을 사용하세요.
+    [중요 작성 규칙]
+    - 응답 내용에 `**`, `*`, `_`, `#` 같은 마크다운(Markdown) 서식 기호는 절대로, 단 하나도 사용하지 마세요. (시스템 에러가 발생합니다)
+    - 강조가 필요한 부분은 【 】 괄호나 📌, 💡, ➡️ 같은 이모지를 활용하여 순수 텍스트로만 깔끔하게 작성하세요.
     """
 
     print("🧠 제미나이 2.5 플래시가 대규모 분석을 수행 중입니다...")
     response = model.generate_content(prompt)
     result_text = response.text
 
-    # 5. 완성된 리포트를 텔레그램으로 쏘기
-    final_message = f"📰 **[오늘의 증권 시황 심층 보고서]**\n\n{result_text}"
+    final_message = f"📰 【오늘의 증권 시황 심층 보고서】\n\n{result_text}"
     await send_telegram_msg(final_message)
     print("✅ 모든 작업이 완료되었습니다!")
 
