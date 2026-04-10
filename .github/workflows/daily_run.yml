@@ -3,23 +3,38 @@ name: Daily Stock Report
 on:
   schedule:
     # UTC 기준입니다. 한국 시간 오전 8시는 UTC 23시입니다.
-    - cron: '17 01 * * *' 
+    - cron: '0 23 * * *'
   workflow_dispatch: # 직접 버튼 눌러서 실행하고 싶을 때 사용
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  daily-report:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
     steps:
       - name: 코드 가져오기
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 파이썬 설치
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
+      - name: 의존성 캐시
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: 도구 설치
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: 코드 실행
         env:
@@ -27,3 +42,13 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python main.py
+
+      - name: 실패 시 텔레그램 알림
+        if: failure()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          curl -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
+            -d chat_id=${TELEGRAM_CHAT_ID} \
+            -d text="❌ Daily Stock Report Failed"
